@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>循环显化论：破缺的归宿</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #050508;
+    color: #bbb;
+    font-family: 'Georgia', serif;
+    overflow: hidden;
+    height: 100vh;
+  }
+  #canvas { display: block; }
+  #title {
+    position: fixed;
+    top: 24px; left: 32px;
+    pointer-events: none;
+  }
+  #title h1 { font-size: 11px; letter-spacing: 3px; color: #444; text-transform: uppercase; font-weight: normal; }
+  #title h2 { font-size: 19px; color: #aaa; font-weight: normal; margin-top: 4px; }
+  #controls {
+    position: fixed;
+    bottom: 32px; left: 32px;
+    display: flex; flex-direction: column; gap: 7px;
+  }
+  button {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #888;
+    padding: 8px 16px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    text-align: left;
+  }
+  button:hover, button.active {
+    background: rgba(255,255,255,0.08);
+    color: #ddd;
+    border-color: rgba(255,255,255,0.3);
+  }
+  #info {
+    position: fixed;
+    bottom: 32px; right: 32px;
+    text-align: right;
+    font-size: 11px;
+    color: #333;
+    line-height: 2.2;
+    max-width: 260px;
+  }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="title">
+  <h1>循环显化论</h1>
+  <h2>破缺的归宿</h2>
+</div>
+<div id="controls">
+  <button class="active" onclick="setMode('cycle')">完整循环</button>
+  <button onclick="setMode('garbage')">零：垃圾场</button>
+  <button onclick="setMode('spiral')">螺旋上升</button>
+  <button onclick="setMode('conservation')">破缺守恒</button>
+</div>
+<div id="info"></div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H, cx, cy, t = 0, mode = 'cycle';
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  cx = W/2; cy = H/2;
+}
+resize();
+window.addEventListener('resize', resize);
+
+const texts = {
+  cycle: '循环产生量\n显化为序\n归序为零\n\n对称 → 破缺 → 数\n→ 镜面 → 回归零\n\n起点即终点\n螺旋而非循环',
+  garbage: '零是垃圾场\n\n容纳一切\n无处可去的因子\n\n既不能为正\n也不能为负\n只能被零包含\n\n容纳本身是对称',
+  spiral: '不是原地循环\n而是螺旋上升\n\n每次回到零\n零已包含\n所有走过的历程\n\n起点的零：空的对称\n终点的零：充满的对称',
+  conservation: '破缺守恒\n\n从对称中来\n最终回归对称\n\n不是消失\n而是转化\n\n数学是守恒的'
+};
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('info').innerHTML = texts[m].replace(/\n/g,'<br>');
+}
+document.getElementById('info').innerHTML = texts.cycle.replace(/\n/g,'<br>');
+
+function clear() {
+  ctx.fillStyle = '#050508';
+  ctx.fillRect(0,0,W,H);
+}
+
+function glow(x,y,r,color,alpha=0.2) {
+  const g = ctx.createRadialGradient(x,y,0,x,y,r);
+  g.addColorStop(0, color.replace(')',`,${alpha})`).replace('rgb','rgba'));
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fill();
+}
+
+function ring(x,y,r,color,alpha=1,width=1) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function dot(x,y,r,color,alpha=1) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function txt(s,x,y,color='#555',size=11,align='center') {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.font = `${size}px Georgia`;
+  ctx.textAlign = align;
+  ctx.fillText(s, x, y);
+  ctx.restore();
+}
+
+function arrow(x1,y1,x2,y2,color,alpha=1) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x2,y2);
+  ctx.stroke();
+  const angle = Math.atan2(y2-y1, x2-x1);
+  const size = 8;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - size*Math.cos(angle-0.3), y2 - size*Math.sin(angle-0.3));
+  ctx.lineTo(x2 - size*Math.cos(angle+0.3), y2 - size*Math.sin(angle+0.3));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+// ── 完整循环 ──
+function drawCycle() {
+  const R = 160;
+  const centers = [
+    {angle: -Math.PI/2, label: '零\n（对称）', color: '#44ffaa', phase: 0},
+    {angle: 0, label: '数', color: '#4488ff', phase: 1},
+    {angle: Math.PI/2, label: '镜面', color: '#ffaa44', phase: 2},
+    {angle: Math.PI, label: '回归', color: '#ff4466', phase: 3},
+  ];
+
+  // 循环箭头
+  const arrowPoints = 60;
+  for (let i = 0; i < arrowPoints; i++) {
+    const progress = (i / arrowPoints + t*0.15) % 1;
+    const angle = -Math.PI/2 + progress * Math.PI * 2;
+    const nextAngle = -Math.PI/2 + ((i+1) / arrowPoints + t*0.15) % 1 * Math.PI * 2;
+    
+    const x1 = cx + R * Math.cos(angle);
+    const y1 = cy + R * Math.sin(angle);
+    const x2 = cx + R * Math.cos(nextAngle);
+    const y2 = cy + R * Math.sin(nextAngle);
+    
+    const alpha = 0.15 + 0.25 * Math.abs(Math.sin(progress * Math.PI * 4 + t*2));
+    const hue = 180 + progress * 60;
+    
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = `hsl(${hue}, 60%, 60%)`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 流动的粒子
+  for (let i = 0; i < 8; i++) {
+    const particleProgress = (t*0.15 + i/8) % 1;
+    const angle = -Math.PI/2 + particleProgress * Math.PI * 2;
+    const px = cx + R * Math.cos(angle);
+    const py = cy + R * Math.sin(angle);
+    const particleAlpha = 0.4 + 0.4*Math.sin(particleProgress*Math.PI*2);
+    const particleHue = 180 + particleProgress*60;
+    dot(px, py, 3+Math.sin(t*3+i)*1, `hsl(${particleHue}, 70%, 65%)`, particleAlpha);
+  }
+
+  // 四个阶段
+  centers.forEach((c, idx) => {
+    const x = cx + R * Math.cos(c.angle);
+    const y = cy + R * Math.sin(c.angle);
+    const pulse = 1 + 0.15 * Math.sin(t*1.5 + c.phase);
+    
+    glow(x, y, 50*pulse, c.color);
+    ring(x, y, 28*pulse, c.color, 0.6);
+    dot(x, y, 5, c.color, 0.9);
+    
+    const lines = c.label.split('\n');
+    lines.forEach((line, li) => {
+      txt(line, x, y + 45 + li*14, c.color, 11);
+    });
+  });
+
+  // 中心标注
+  txt('循环显化论', cx, cy-8, '#666', 16);
+  txt('起点即终点', cx, cy+10, '#444', 10);
+
+  // 标注每段
+  txt('破缺', cx + R*0.7, cy - R*0.5, '#4488ff', 9);
+  txt('传递', cx + R*0.7, cy + R*0.3, '#ffaa44', 9);
+  txt('归零', cx - R*0.7, cy + R*0.5, '#ff4466', 9);
+  txt('显化', cx - R*0.7, cy - R*0.3, '#44ffaa', 9);
+}
+
+// ── 零：垃圾场 ──
+function drawGarbage() {
+  const centerR = 90;
+  
+  // 零的核心（发光）
+  glow(cx, cy, 150, 'rgb(68,255,170)', 0.15);
+  
+  // 旋转的容纳区域
+  for (let layer = 0; layer < 3; layer++) {
+    const r = 50 + layer*25;
+    const count = 8 + layer*4;
+    for (let i = 0; i < count; i++) {
+      const angle = (i/count)*Math.PI*2 + t*0.3*(layer%2?1:-1) + layer*0.5;
+      const x = cx + r*Math.cos(angle);
+      const y = cy + r*Math.sin(angle);
+      const alpha = 0.2 + 0.3*Math.abs(Math.sin(t*2 + i + layer));
+      ring(x, y, 4+layer, '#44ffaa', alpha, 0.5);
+    }
+  }
+
+  ring(cx, cy, centerR, '#44ffaa', 0.4, 2);
+  
+  txt('零', cx, cy-6, '#44ffaa', 24);
+  txt('（垃圾场）', cx, cy+16, '#338866', 11);
+
+  // 流入的因子
+  const factors = [
+    {angle: 0, label: '正的残余', color: '#4488ff'},
+    {angle: Math.PI*0.4, label: '负的残余', color: '#ff4466'},
+    {angle: Math.PI*0.8, label: '无法归类', color: '#ffaa44'},
+    {angle: Math.PI*1.2, label: '破缺因子', color: '#ff44ff'},
+    {angle: Math.PI*1.6, label: '叠加态', color: '#44ffff'},
+  ];
+
+  factors.forEach((f, i) => {
+    const flowProgress = (t*0.4 + i*0.2) % 1;
+    const startR = 220;
+    const r = startR - flowProgress * (startR - centerR);
+    const x = cx + r * Math.cos(f.angle);
+    const y = cy + r * Math.sin(f.angle);
+    
+    const alpha = flowProgress < 0.8 ? 0.3+flowProgress*0.5 : 1-(flowProgress-0.8)*5;
+    
+    if (alpha > 0) {
+      dot(x, y, 3, f.color, alpha);
+      
+      if (r > centerR + 20) {
+        txt(f.label, x + 20*Math.cos(f.angle+0.3), y + 20*Math.sin(f.angle+0.3), f.color, 9, 'left');
+      }
+    }
+  });
+
+  // 下方说明
+  txt('容纳一切无处可去的因子', cx, cy+centerR+40, '#446655', 11);
+  txt('既不能为正，也不能为负', cx, cy+centerR+56, '#446655', 10);
+  txt('这种容纳本身就是对称', cx, cy+centerR+72, '#338866', 10);
+
+  // 上方
+  txt('零不是"无"', cx, cy-centerR-40, '#555', 11);
+  txt('零是"万有的容纳者"', cx, cy-centerR-24, '#666', 11);
+}
+
+// ── 螺旋上升 ──
+function drawSpiral() {
+  const turns = 4;
+  const points = 200;
+  
+  // 螺旋路径
+  for (let i = 0; i < points-1; i++) {
+    const progress = i / points;
+    const nextProgress = (i+1) / points;
+    
+    const angle = progress * Math.PI * 2 * turns - Math.PI/2;
+    const nextAngle = nextProgress * Math.PI * 2 * turns - Math.PI/2;
+    
+    const r = 30 + progress * 150;
+    const nextR = 30 + nextProgress * 150;
+    
+    const z = progress * 200 - 100;
+    const nextZ = nextProgress * 200 - 100;
+    
+    const x1 = cx + r * Math.cos(angle);
+    const y1 = cy + z;
+    const x2 = cx + nextR * Math.cos(nextAngle);
+    const y2 = cy + nextZ;
+    
+    const hue = 160 + progress * 80;
+    const alpha = 0.2 + 0.3 * progress;
+    
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = `hsl(${hue}, 60%, 55%)`;
+    ctx.lineWidth = 1.5 + progress*1.5;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 流动的光点
+  const particleT = (t * 0.2) % 1;
+  const pAngle = particleT * Math.PI * 2 * turns - Math.PI/2;
+  const pR = 30 + particleT * 150;
+  const pZ = particleT * 200 - 100;
+  const px = cx + pR * Math.cos(pAngle);
+  const py = cy + pZ;
+  glow(px, py, 30, `hsl(${160+particleT*80}, 70%, 65%)`, 0.4);
+  dot(px, py, 4, `hsl(${160+particleT*80}, 70%, 65%)`, 0.9);
+
+  // 起点的零
+  const startX = cx;
+  const startY = cy - 100;
+  glow(startX, startY, 40, 'rgb(68,255,170)', 0.15);
+  ring(startX, startY, 25, '#44ffaa', 0.6);
+  dot(startX, startY, 4, '#44ffaa', 0.9);
+  txt('起点：空的对称', startX + 40, startY, '#44ffaa', 10, 'left');
+
+  // 终点的零
+  const endAngle = 1 * Math.PI * 2 * turns - Math.PI/2;
+  const endR = 30 + 1 * 150;
+  const endX = cx + endR * Math.cos(endAngle);
+  const endY = cy + 100;
+  glow(endX, endY, 50, 'rgb(255,170,68)', 0.2);
+  ring(endX, endY, 30, '#ffaa44', 0.7+Math.sin(t)*0.1, 2);
+  dot(endX, endY, 5, '#ffaa44', 0.95);
+  txt('终点：充满的对称', endX + 40, endY, '#ffaa44', 10, 'left');
+
+  // 中间标注
+  txt('不是原地循环', cx - 180, cy - 50, '#555', 11, 'left');
+  txt('而是螺旋上升', cx - 180, cy - 34, '#666', 11, 'left');
+  txt('每次回到零', cx - 180, cy - 14, '#444', 10, 'left');
+  txt('零已包含所有历程', cx - 180, cy + 2, '#444', 10, 'left');
+}
+
+// ── 破缺守恒 ──
+function drawConservation() {
+  const stages = [
+    {x: cx-240, y: cy-80, label: '对称', sublabel: '（起点）', color: '#44ffaa', amount: 0},
+    {x: cx-80, y: cy-80, label: '破缺', sublabel: '', color: '#4488ff', amount: 1},
+    {x: cx+80, y: cy-80, label: '数', sublabel: '', color: '#66aaff', amount: 1},
+    {x: cx+240, y: cy+40, label: '传递', sublabel: '', color: '#ffaa44', amount: 1},
+    {x: cx+80, y: cy+120, label: '镜面', sublabel: '', color: '#ff8844', amount: 1},
+    {x: cx-80, y: cy+120, label: '积累', sublabel: '', color: '#ff4466', amount: 1},
+    {x: cx-240, y: cy+40, label: '回归', sublabel: '（终点）', color: '#44ffaa', amount: 0},
+  ];
+
+  // 连线
+  for (let i = 0; i < stages.length - 1; i++) {
+    const s1 = stages[i];
+    const s2 = stages[i+1];
+    const flowAlpha = 0.2 + 0.2*Math.abs(Math.sin(t*1.5 - i*0.5));
+    arrow(s1.x, s1.y, s2.x, s2.y, '#666', flowAlpha);
+  }
+
+  // 各个阶段
+  stages.forEach((s, i) => {
+    const pulse = 1 + 0.1*Math.sin(t*2 + i);
+    const r = 20 + s.amount * 15;
+    
+    if (s.amount > 0) {
+      glow(s.x, s.y, r*2, s.color, 0.15);
+    }
+    
+    ring(s.x, s.y, r*pulse, s.color, 0.5 + 0.2*Math.sin(t+i));
+    dot(s.x, s.y, 4, s.color, 0.9);
+    
+    txt(s.label, s.x, s.y + r + 18, s.color, 11);
+    if (s.sublabel) {
+      txt(s.sublabel, s.x, s.y + r + 32, s.color.replace('f','9'), 9);
+    }
+    
+    // 破缺量标注
+    if (s.amount > 0) {
+      txt(`破缺=${s.amount}`, s.x, s.y - r - 8, s.color.replace('f','8'), 9);
+    }
+  });
+
+  // 中心守恒定律
+  const lawY = cy - 20;
+  txt('破缺守恒定律', cx, lawY, '#888', 14);
+  txt('从对称中来，最终回归对称', cx, lawY + 22, '#555', 11);
+  txt('不是消失，而是转化', cx, lawY + 38, '#444', 10);
+
+  // 守恒箭头（起点到终点）
+  const startS = stages[0];
+  const endS = stages[6];
+  ctx.save();
+  ctx.globalAlpha = 0.15;
+  ctx.strokeStyle = '#44ffaa';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 8]);
+  ctx.beginPath();
+  ctx.arc(cx, cy+30, 200, Math.PI*1.3, Math.PI*1.7);
+  ctx.stroke();
+  ctx.restore();
+
+  // 等号
+  txt('=', (startS.x + endS.x)/2, (startS.y + endS.y)/2 - 60, '#44ffaa', 28);
+}
+
+function draw() {
+  clear();
+  t += 0.016;
+  switch(mode) {
+    case 'cycle': drawCycle(); break;
+    case 'garbage': drawGarbage(); break;
+    case 'spiral': drawSpiral(); break;
+    case 'conservation': drawConservation(); break;
+  }
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>

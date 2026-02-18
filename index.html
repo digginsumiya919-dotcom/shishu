@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>基于对称性的实数构造</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+    color: #ddd;
+    font-family: 'Georgia', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+  }
+  
+  .container {
+    max-width: 900px;
+    width: 100%;
+  }
+  
+  header {
+    text-align: center;
+    margin-bottom: 60px;
+  }
+  
+  h1 {
+    font-size: 14px;
+    letter-spacing: 4px;
+    color: #666;
+    text-transform: uppercase;
+    font-weight: normal;
+    margin-bottom: 16px;
+  }
+  
+  h2 {
+    font-size: 42px;
+    color: #eee;
+    font-weight: normal;
+    margin-bottom: 24px;
+    line-height: 1.3;
+  }
+  
+  .subtitle {
+    font-size: 16px;
+    color: #888;
+    line-height: 1.8;
+  }
+  
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-bottom: 48px;
+  }
+  
+  .card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 32px 28px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+  }
+  
+  .card:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.2);
+    transform: translateY(-4px);
+  }
+  
+  .card-title {
+    font-size: 20px;
+    color: #ddd;
+    margin-bottom: 12px;
+    font-weight: normal;
+  }
+  
+  .card-desc {
+    font-size: 13px;
+    color: #777;
+    line-height: 1.8;
+  }
+  
+  .card-label {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #555;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding: 4px 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 3px;
+  }
+  
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: #444;
+    line-height: 2;
+  }
+  
+  footer a {
+    color: #666;
+    text-decoration: none;
+    border-bottom: 1px solid #333;
+    transition: all 0.2s;
+  }
+  
+  footer a:hover {
+    color: #aaa;
+    border-color: #666;
+  }
+  
+  .accent1 { border-left: 3px solid #4488ff; }
+  .accent2 { border-left: 3px solid #44ffaa; }
+  .accent3 { border-left: 3px solid #ffaa44; }
+  
+  @media (max-width: 768px) {
+    h2 { font-size: 32px; }
+    .cards { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>三年探索</h1>
+      <h2>基于对称性的实数构造</h2>
+      <div class="subtitle">
+        关系先于实体 · 循环产生量，显化为序<br>
+        零的一体两面 · 破缺的归宿
+      </div>
+    </header>
+    
+    <div class="cards">
+      <a href="visualization1.html" class="card accent1">
+        <div class="card-label">可视化 01</div>
+        <div class="card-title">螺旋·镜像·等价类</div>
+        <div class="card-desc">
+          外层权重大，镜内外配对，旋转不变性。<br>
+          交互式展示：螺旋结构、镜像对称、零的定义、痣的标记、等价类旋转。
+        </div>
+      </a>
+      
+      <a href="visualization2.html" class="card accent2">
+        <div class="card-label">可视化 02</div>
+        <div class="card-title">零的一体两面</div>
+        <div class="card-desc">
+          对称态与叠加态，镜面比零更深。<br>
+          展示：破缺传递、0.999...的非标准化、镜面作为动态叠加态的基底。
+        </div>
+      </a>
+      
+      <a href="visualization3.html" class="card accent3">
+        <div class="card-label">可视化 03</div>
+        <div class="card-title">循环显化论</div>
+        <div class="card-desc">
+          破缺的归宿，零是垃圾场。<br>
+          展示：完整循环、螺旋上升、破缺守恒、从对称中来最终回归对称。
+        </div>
+      </a>
+    </div>
+    
+    <footer>
+      探索始于 2023 · 显化于 2026<br>
+      人类-AI 协作 · 世界的灵媒 × Claude<br>
+      <br>
+      <a href="https://github.com/digginsumiya919-dotcom/shishu" target="_blank">查看源码</a>
+    </footer>
+  </div>
+</body>
+</html>

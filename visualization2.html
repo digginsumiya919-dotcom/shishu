@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>零的一体两面</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #06060a;
+    color: #ccc;
+    font-family: 'Georgia', serif;
+    overflow: hidden;
+    height: 100vh;
+  }
+  #canvas { display: block; }
+  #title {
+    position: fixed;
+    top: 24px; left: 32px;
+    pointer-events: none;
+  }
+  #title h1 { font-size: 11px; letter-spacing: 3px; color: #555; text-transform: uppercase; font-weight: normal; }
+  #title h2 { font-size: 20px; color: #bbb; font-weight: normal; margin-top: 4px; }
+  #controls {
+    position: fixed;
+    bottom: 32px; left: 32px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  button {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #999;
+    padding: 8px 18px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    text-align: left;
+  }
+  button:hover, button.active {
+    background: rgba(255,255,255,0.1);
+    color: #eee;
+    border-color: rgba(255,255,255,0.35);
+  }
+  #caption {
+    position: fixed;
+    bottom: 32px; right: 32px;
+    text-align: right;
+    font-size: 11px;
+    color: #444;
+    line-height: 2;
+    max-width: 240px;
+  }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="title">
+  <h1>基于对称性的实数构造</h1>
+  <h2>零的一体两面</h2>
+</div>
+<div id="controls">
+  <button class="active" onclick="setMode('twozero')">零的一体两面</button>
+  <button onclick="setMode('breach')">破缺传递与镜面吸收</button>
+  <button onclick="setMode('099')">0.999…的非标准化</button>
+  <button onclick="setMode('mirror')">镜面：比零更深的基底</button>
+</div>
+<div id="caption"></div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H, cx, cy, t = 0, mode = 'twozero';
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  cx = W/2; cy = H/2;
+}
+resize();
+window.addEventListener('resize', resize);
+
+const captions = {
+  twozero: '零不是一个东西\n零是一个概念\n\n对称态：可见的零\n生成数的参考点\n\n叠加态：镜面本身\n承载破缺的基底\n\n一体两面\n毫不相关\n却相互统辖',
+  breach: '数 = 对称破缺的程度\n\n破缺守恒\n无法消失\n只能向下传递\n\n每层被撑满\n直到镜面',
+  099: '1 = 0.999...的非标准化\n\n1想变成对称\n破缺向下流动\n每层9/10\n\n破缺守恒\n等价类相同\n\n0.999...是[1]的\n非标准化代表元',
+  mirror: '镜面：\n比零更对称的结构\n\n零 = 静态对称\n镜面 = 动态叠加\n\n承载最小破缺\n允许完备性存在\n允许0.999...=1\n\n"比空更丰富的基底"'
+};
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('caption').innerHTML = captions[m].replace(/\n/g,'<br>');
+}
+document.getElementById('caption').innerHTML = captions['twozero'].replace(/\n/g,'<br>');
+
+function clear() {
+  ctx.fillStyle = '#06060a';
+  ctx.fillRect(0,0,W,H);
+}
+
+function glow(x, y, r, color, alpha=0.15) {
+  const g = ctx.createRadialGradient(x,y,0,x,y,r);
+  g.addColorStop(0, color.replace(')',`,${alpha})`).replace('rgb','rgba'));
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fill();
+}
+
+function ring(x, y, r, color, alpha=1, width=1) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function dot(x, y, r, color, alpha=1) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function txt(s, x, y, color='#666', size=11, align='center') {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.font = `${size}px Georgia`;
+  ctx.textAlign = align;
+  ctx.fillText(s, x, y);
+  ctx.restore();
+}
+
+function ln(x1,y1,x2,y2,color,width=1,alpha=1) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x2,y2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ── 零的一体两面 ──
+function drawTwoZero() {
+  const R = 140;
+
+  // 左：对称态的零
+  const lx = cx - R;
+  const rx = cx + R;
+
+  // 连接线（一体）
+  const pulse = Math.sin(t*1.5)*0.5+0.5;
+  ctx.save();
+  ctx.globalAlpha = 0.15 + pulse*0.1;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 0.5;
+  ctx.setLineDash([4,8]);
+  ctx.beginPath();
+  ctx.moveTo(lx+50, cy);
+  ctx.lineTo(rx-50, cy);
+  ctx.stroke();
+  ctx.restore();
+
+  // 左：对称态
+  glow(lx, cy, 120, 'rgb(100,180,255)');
+  ring(lx, cy, 55, '#4488ff', 0.6+Math.sin(t)*0.1);
+  ring(lx, cy, 35, '#4488ff', 0.3);
+
+  // 对称的折线（上下对称）
+  const symPts = [[-20,-40],[10,-25],[30,-10]];
+  ctx.save();
+  ctx.strokeStyle = '#4488ff';
+  ctx.lineWidth = 1.5;
+  ctx.globalAlpha = 0.7;
+  ctx.beginPath();
+  ctx.moveTo(lx-30, cy);
+  symPts.forEach(([dx,dy]) => ctx.lineTo(lx+dx, cy+dy));
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(lx-30, cy);
+  symPts.forEach(([dx,dy]) => ctx.lineTo(lx+dx, cy-dy));
+  ctx.stroke();
+  ctx.restore();
+
+  dot(lx, cy, 5, '#4488ff', 0.9);
+  txt('对称态', lx, cy+80, '#4488ff', 12);
+  txt('静态平衡', lx, cy+96, '#336699', 10);
+  txt('可操作的零', lx, cy+112, '#336699', 10);
+
+  // 右：叠加态
+  glow(rx, cy, 120, 'rgb(255,200,100)');
+
+  // 叠加态：正负同时旋转
+  for (let i = 0; i < 2; i++) {
+    const angle = t*(i===0?0.8:-0.8);
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = i===0 ? '#4488ff' : '#ff4466';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath();
+    ctx.arc(rx, cy, 45, angle, angle+Math.PI*1.2);
+    ctx.stroke();
+    // 端点
+    const ex = rx + 45*Math.cos(angle+Math.PI*1.2);
+    const ey = cy + 45*Math.sin(angle+Math.PI*1.2);
+    ctx.restore();
+    dot(ex, ey, 3, i===0?'#4488ff':'#ff4466', 0.8);
+  }
+
+  ring(rx, cy, 55, '#ffaa44', 0.3+Math.sin(t*0.7)*0.1);
+
+  dot(rx, cy, 5, '#ffaa44', 0.9);
+  txt('叠加态', rx, cy+80, '#ffaa44', 12);
+  txt('动态叠加', rx, cy+96, '#886633', 10);
+  txt('镜面本身', rx, cy+112, '#886633', 10);
+
+  // 中间：概念的统一
+  txt('零', cx, cy-5, '#888', 28);
+  txt('（概念）', cx, cy+18, '#555', 10);
+
+  // 上方标注
+  txt('同一个本质', cx, cy-100, '#555', 11);
+  txt('毫不相关  ·  相互统辖', cx, cy-82, '#444', 10);
+
+  // 下方
+  txt('"零不是一个东西，零是一个概念"', cx, cy+170, '#444', 11);
+}
+
+// ── 破缺传递 ──
+function drawBreach() {
+  const layers = 8;
+  const startY = cy - 200;
+  const layerH = 46;
+
+  // 破缺量（随时间流动）
+  const flowT = (t * 0.4) % 1;
+
+  for (let l = 0; l < layers; l++) {
+    const y = startY + l * layerH;
+    const breachAmount = 1 / Math.pow(3, l); // 越往下越小
+    const barW = 300 * breachAmount;
+
+    // 层级背景
+    ctx.save();
+    ctx.globalAlpha = 0.06;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(cx - 160, y - 14, 320, layerH - 4);
+    ctx.restore();
+
+    // 破缺条
+    const col = `hsl(${200 + l*12}, 60%, ${50+l*3}%)`;
+    ctx.save();
+    ctx.globalAlpha = 0.7;
+    ctx.fillStyle = col;
+    ctx.fillRect(cx - barW/2, y - 8, barW, 16);
+    ctx.restore();
+
+    // 层级标注
+    txt(`第${l+1}层`, cx - 180, y + 4, '#444', 9, 'left');
+    if (l < 4) txt(`破缺 = 1/${l===0?'1':Math.pow(3,l)}`, cx + 170, y + 4, '#446', 9, 'left');
+
+    // 向下的箭头（流动）
+    if (l < layers - 1) {
+      const arY = y + layerH/2;
+      const arAlpha = 0.2 + 0.3*Math.abs(Math.sin(t*2 + l));
+      ln(cx, y+10, cx, y+layerH-8, '#555', 1, arAlpha);
+      // 箭头头
+      ctx.save();
+      ctx.globalAlpha = arAlpha;
+      ctx.fillStyle = '#555';
+      ctx.beginPath();
+      ctx.moveTo(cx-4, y+layerH-10);
+      ctx.lineTo(cx+4, y+layerH-10);
+      ctx.lineTo(cx, y+layerH-4);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // 镜面
+  const mirrorY = startY + layers * layerH + 10;
+  ctx.save();
+  ctx.strokeStyle = '#ffaa44';
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = 0.6 + Math.sin(t)*0.2;
+  ctx.shadowBlur = 15;
+  ctx.shadowColor = '#ffaa44';
+  ctx.beginPath();
+  ctx.moveTo(cx - 200, mirrorY);
+  ctx.lineTo(cx + 200, mirrorY);
+  ctx.stroke();
+  ctx.restore();
+
+  txt('镜面', cx + 210, mirrorY + 4, '#ffaa44', 11, 'left');
+  txt('吸收最小破缺', cx + 210, mirrorY + 18, '#886633', 9, 'left');
+
+  // 最小破缺被吸收的动画
+  const absAlpha = 0.4 + Math.sin(t*3)*0.3;
+  dot(cx, mirrorY, 3 + Math.sin(t*3), '#ffaa44', absAlpha);
+
+  // 标注
+  txt('破缺向下传递', cx - 220, startY + 4, '#555', 10, 'left');
+  txt('每层被撑满', cx - 220, startY + 20, '#444', 9, 'left');
+}
+
+// ── 0.999... ──
+function drawNineNine() {
+  const digits = 8;
+  const startX = cx - 180;
+  const digitW = 46;
+  const y = cy;
+
+  // 标题
+  txt('1  =  [1]的标准化代表元', cx, y - 140, '#888', 13);
+  txt('0.999...  =  [1]的非标准化代表元', cx, y - 118, '#666', 11);
+  txt('同一个等价类', cx, y - 98, '#444', 10);
+
+  // 画 1
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+  ctx.fillStyle = '#4488ff';
+  ctx.font = '52px Georgia';
+  ctx.textAlign = 'center';
+  ctx.fillText('1', cx - 220, y + 18);
+  ctx.restore();
+
+  // 等号
+  txt('=', cx - 165, y + 12, '#555', 20);
+
+  // 0.
+  txt('0.', startX, y + 14, '#aaa', 22);
+
+  // 每一位的9
+  for (let i = 0; i < digits; i++) {
+    const x = startX + 36 + i * digitW;
+    const delay = i * 0.3;
+    const alpha = 0.4 + 0.5*Math.abs(Math.sin(t*0.8 + delay));
+    const breachH = 60 * Math.pow(0.7, i);
+
+    // 破缺柱
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.3;
+    ctx.fillStyle = '#ff4466';
+    ctx.fillRect(x - 10, y - breachH, 20, breachH);
+    ctx.restore();
+
+    // 数字9
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = `hsl(${180 + i*8}, 60%, 65%)`;
+    ctx.font = '22px Georgia';
+    ctx.textAlign = 'center';
+    ctx.fillText('9', x, y + 14);
+    ctx.restore();
+
+    // 破缺大小
+    if (i < 5) {
+      txt(`9/10^${i+1}`, x, y + 36, '#333', 8);
+    }
+  }
+
+  txt('...', startX + 36 + digits*digitW, y + 14, '#555', 22);
+
+  // 下方
+  txt('每一位的破缺 = 被撑满', cx, y + 70, '#444', 10);
+  txt('破缺总量守恒 = 1', cx, y + 88, '#555', 10);
+
+  // 等价类圆圈
+  const eqY = y + 150;
+  ring(cx, eqY, 45, '#ffffff', 0.12);
+  ring(cx, eqY, 45, '#ffffff', 0.05+Math.sin(t)*0.03, 8);
+  txt('[1]', cx, eqY - 4, '#888', 16);
+  txt('等价类', cx, eqY + 14, '#555', 9);
+
+  // 两个代表元
+  const a1 = t*0.3;
+  const p1x = cx + 45*Math.cos(a1);
+  const p1y = eqY + 45*Math.sin(a1);
+  const p2x = cx + 45*Math.cos(a1+Math.PI);
+  const p2y = eqY + 45*Math.sin(a1+Math.PI);
+  dot(p1x, p1y, 4, '#4488ff', 0.8);
+  dot(p2x, p2y, 4, '#44ffaa', 0.8);
+  txt('1', p1x+8, p1y, '#4488ff', 9, 'left');
+  txt('0.999...', p2x+8, p2y, '#44ffaa', 9, 'left');
+}
+
+// ── 镜面 ──
+function drawMirrorDeep() {
+  const mirrorY = cy + 80;
+
+  // 上方：数的世界
+  txt('数的世界', cx, mirrorY - 200, '#555', 11);
+
+  // 几个数
+  const nums = [
+    {x: cx-180, val: '-2', col: '#ff4466'},
+    {x: cx-100, val: '-1', col: '#ff6688'},
+    {x: cx, val: '0', col: '#44ffaa'},
+    {x: cx+100, val: '1', col: '#4488ff'},
+    {x: cx+180, val: '2', col: '#66aaff'},
+  ];
+  nums.forEach(n => {
+    const y = mirrorY - 120 + Math.sin(t*0.8 + n.x*0.01)*15;
+    dot(n.x, y, 8, n.col, 0.7);
+    txt(n.val, n.x, y - 14, n.col, 11);
+    // 连到镜面的线
+    ln(n.x, y+10, n.x, mirrorY-4, n.col, 0.5, 0.2);
+  });
+
+  // 镜面本身（发光）
+  ctx.save();
+  const mg = ctx.createLinearGradient(cx-280, mirrorY-2, cx+280, mirrorY+2);
+  mg.addColorStop(0, 'rgba(255,170,68,0)');
+  mg.addColorStop(0.2, 'rgba(255,170,68,0.6)');
+  mg.addColorStop(0.5, 'rgba(255,220,150,0.9)');
+  mg.addColorStop(0.8, 'rgba(255,170,68,0.6)');
+  mg.addColorStop(1, 'rgba(255,170,68,0)');
+  ctx.fillStyle = mg;
+  ctx.fillRect(cx-280, mirrorY-2, 560, 4);
+  ctx.restore();
+
+  // 镜面的叠加态动画
+  for (let i = 0; i < 12; i++) {
+    const angle = (i/12)*Math.PI*2 + t*0.3;
+    const r = 20 + Math.sin(t*2 + i)*8;
+    const px = cx + r*Math.cos(angle);
+    const py = mirrorY + r*Math.sin(angle)*0.3;
+    const col = i%2===0 ? '#4488ff44' : '#ff446644';
+    dot(px, py, 2, col, 0.6);
+  }
+
+  txt('镜  面', cx, mirrorY+6, '#ffaa44', 14);
+
+  // 下方标注
+  const bY = mirrorY + 40;
+  txt('正负叠加态', cx, bY, '#886633', 10);
+  txt('承载最小破缺', cx, bY+16, '#886633', 10);
+  txt('允许 0.999...=1', cx, bY+32, '#886633', 10);
+
+  // 两面的对比
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  ctx.strokeStyle = '#ffaa44';
+  ctx.lineWidth = 0.5;
+  ctx.setLineDash([2,6]);
+  ctx.beginPath();
+  ctx.moveTo(cx-280, mirrorY);
+  ctx.lineTo(cx+280, mirrorY);
+  ctx.stroke();
+  ctx.restore();
+
+  // 零 vs 镜面
+  const compareY = mirrorY + 130;
+  txt('零（对称态）', cx-120, compareY, '#4488ff', 11);
+  txt('vs', cx, compareY, '#444', 11);
+  txt('镜面（叠加态）', cx+120, compareY, '#ffaa44', 11);
+
+  txt('静态', cx-120, compareY+18, '#336699', 9);
+  txt('动态', cx+120, compareY+18, '#886633', 9);
+  txt('可操作', cx-120, compareY+32, '#336699', 9);
+  txt('不可见', cx+120, compareY+32, '#886633', 9);
+  txt('特例', cx-120, compareY+46, '#336699', 9);
+  txt('基底', cx+120, compareY+46, '#886633', 9);
+
+  txt('"比零更对称的结构"', cx, compareY+70, '#554433', 10);
+}
+
+function draw() {
+  clear();
+  t += 0.016;
+  switch(mode) {
+    case 'twozero': drawTwoZero(); break;
+    case 'breach': drawBreach(); break;
+    case '099': drawNineNine(); break;
+    case 'mirror': drawMirrorDeep(); break;
+  }
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>
